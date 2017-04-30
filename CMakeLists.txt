@@ -133,6 +133,12 @@ if (OpenCV_FOUND AND Pangolin_FOUND)
 	message("--- compiling dso_dataset.")
 	add_executable(dso_dataset ${PROJECT_SOURCE_DIR}/src/main_dso_pangolin.cpp )
     target_link_libraries(dso_dataset dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${roscpp_LIBRARIES})
+
+  # Compile other executable
+  add_executable(dso_live ${PROJECT_SOURCE_DIR}/src/main_dso_live.cpp )
+    target_link_libraries(dso_live dso boost_system boost_thread cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} ${roscpp_LIBRARIES})
+
+
 else()
 	message("--- not building dso_dataset, since either don't have openCV or Pangolin.")
 endif()
