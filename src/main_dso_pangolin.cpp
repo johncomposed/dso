@@ -488,11 +488,9 @@ int main( int argc, char** argv )
             }
 
 
+            printf("--- JW Skip Frame %d ---\n", skipFrame);
 
             if(!skipFrame) fullSystem->addActiveFrame(img, i);
-
-
-
 
             delete img;
 
