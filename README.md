@@ -1,3 +1,9 @@
+# Build Notes
+
+On MacOS I'm sometimes getting an issue with `-lboost-thread`, but it seems to go away and build fine when i change it to `-lboost-thread-mt` in `CMakeFiles/dso_*/link.txt`
+
+
+
 # DSO: Direct Sparse Odometry
 
 For more information see

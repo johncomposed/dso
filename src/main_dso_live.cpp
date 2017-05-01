@@ -44,6 +44,8 @@
 // #include <sensor_msgs/CameraInfo.h>
 // #include <geometry_msgs/PoseStamped.h>
 // #include "cv_bridge/cv_bridge.h"
+#include "opencv2/opencv.hpp"
+
 
 
 std::string calib = "";
@@ -137,7 +139,7 @@ FullSystem* fullSystem = 0;
 Undistort* undistorter = 0;
 int frameID = 0;
 
-void vidCb(const Mat img, int timestamp)
+void vidCb(const cv::Mat img, int timestamp)
 {
   // cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO8);
   // assert(cv_ptr->image.type() == CV_8U);
@@ -174,11 +176,12 @@ int main( int argc, char** argv )
 {
   // ros::init(argc, argv, "dso_live");
 
-  VideoCapture cap(0); // open the default camera
+  for(int i=1; i<argc;i++) parseArgument(argv[i]);
+
+  // Let's try opening after we parse the args
+  cv::VideoCapture cap(0); 
   if(!cap.isOpened())  // check if we succeeded
       return -1;
-
-  for(int i=1; i<argc;i++) parseArgument(argv[i]);
 
 
   setting_desiredImmatureDensity = 1000;
@@ -226,21 +229,21 @@ int main( int argc, char** argv )
     // ros::NodeHandle nh;
     // ros::Subscriber imgSub = nh.subscribe("image", 1, &vidCb);
 
-    Mat edges;
-    namedWindow("edges",1);
+    cv::Mat edges;
+    cv::namedWindow("edges",1);
     for(;;)
     {
-        Mat frame;
+        cv::Mat frame;
 
         // http://stackoverflow.com/questions/35910547/opencv-get-frame-by-timestamp
         int timestamp = (int)cap.get(CV_CAP_PROP_POS_MSEC); 
 
         cap >> frame; // get a new frame from camera
-        cvtColor(frame, edges, CV_BGR2GRAY);
+        cv::cvtColor(frame, edges, CV_BGR2GRAY);
         
         vidCb(frame, timestamp);
 
-        if(waitKey(30) >= 0) break;
+        if(cv::waitKey(30) >= 0) break;
     }
 
     // the camera will be deinitialized automatically in VideoCapture destructor
