@@ -4,6 +4,18 @@ On MacOS I'm sometimes getting an issue with `-lboost-thread`, but it seems to g
 
 
 
+# Running notes
+As files: 
+
+```sh
+bin/dso_live files=sequence_10/images.zip calib=sequence_10/camera.txt gamma=sequence_10/pcalib.txt vignette=sequence_10/vignette.png
+
+export seq="sequence_14"; and bin/dso_live video=1 files=$seq/5x.mp4 calib=$seq/camera.txt gamma=$seq/pcalib.txt vignette=$seq/vignette.png 
+```
+
+
+
+
 # DSO: Direct Sparse Odometry
 
 For more information see

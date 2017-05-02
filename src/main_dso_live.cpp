@@ -251,7 +251,12 @@ int main( int argc, char** argv ) {
   // hook crtl+C.
   boost::thread exThread = boost::thread(exitThread);
   
-  ImageFolderReader* reader = new ImageFolderReader(source,calib, gammaCalib, vignette);
+  ImageFolderReader* reader;
+  // reader = video ? 
+  //   new VideoReader(source, calib, gammaCalib, vignette) : 
+  //   new ImageFolderReader(source,calib, gammaCalib, vignette);
+
+  reader = new ImageFolderReader(source,calib, gammaCalib, vignette);
   reader->setGlobalCalibration();
 
 
@@ -276,101 +281,26 @@ int main( int argc, char** argv ) {
 
   // to make MacOS happy: run this in dedicated thread -- and use this one to run the GUI.
   std::thread runthread([&]() {
-    std::vector<int> idsToPlay;
-    std::vector<double> timesToPlayAt;
-    for(int i=start;i>= 0 && i< reader->getNumImages() && linc*i < linc*end;i+=linc) {
-      idsToPlay.push_back(i);
-      if(timesToPlayAt.size() == 0) {
-        timesToPlayAt.push_back((double)0);
-      }
-      else {
-        double tsThis = reader->getTimestamp(idsToPlay[idsToPlay.size()-1]);
-        double tsPrev = reader->getTimestamp(idsToPlay[idsToPlay.size()-2]);
-        timesToPlayAt.push_back(timesToPlayAt.back() +  fabs(tsThis-tsPrev)/playbackSpeed);
-      }
-    }
 
-
-    // Future API
-
-    // reader.prepVideo();
-
-    // reader.readVideo([&](ImageAndExposure* img, int index) {
-    //   fullSystem->addActiveFrame(img, i);
-
-
-    //   if(fullSystem->initFailed || setting_fullResetRequested) {
-    //     if(index < 250 || setting_fullResetRequested) {
-    //       printf("RESETTING!\n");
-
-    //       std::vector<IOWrap::Output3DWrapper*> wraps = fullSystem->outputWrapper;
-    //       delete fullSystem;
-
-    //       for(IOWrap::Output3DWrapper* ow : wraps) ow->reset();
-
-    //       fullSystem = new FullSystem();
-    //       fullSystem->setGammaFunction(reader->getPhotometricGamma());
-    //       fullSystem->linearizeOperation = (playbackSpeed==0);
-
-
-    //       fullSystem->outputWrapper = wraps;
-
-    //       setting_fullResetRequested=false;
-    //     }
-    //   }
-
-    //   if(fullSystem->isLost) {
-    //       printf("LOST!!\n");
-    //       break;
-    //   }
-
-
-    // });
-
-
+    reader->prepVideo(playbackSpeed);
 
     struct timeval tv_start;
     gettimeofday(&tv_start, NULL);
     clock_t started = clock();
     double sInitializerOffset=0;
 
+    reader->readVideo([&](ImageAndExposure* img, int index) {
 
-    for(int ii=0;ii<(int)idsToPlay.size(); ii++) {
       if(!fullSystem->initialized) {  // if not initialized: reset start time. 
         gettimeofday(&tv_start, NULL);
         started = clock();
-        sInitializerOffset = timesToPlayAt[ii];
+        sInitializerOffset = reader->makeOffset(index);
       }
 
-      int i = idsToPlay[ii];
-
-
-      ImageAndExposure* img = reader->getImage(i);
-
-
-
-      bool skipFrame=false;
-      if(playbackSpeed!=0) {
-        struct timeval tv_now; gettimeofday(&tv_now, NULL);
-        double sSinceStart = sInitializerOffset + ((tv_now.tv_sec-tv_start.tv_sec) + (tv_now.tv_usec-tv_start.tv_usec)/(1000.0f*1000.0f));
-
-        if(sSinceStart < timesToPlayAt[ii])
-          usleep((int)((timesToPlayAt[ii]-sSinceStart)*1000*1000));
-        else if(sSinceStart > timesToPlayAt[ii]+0.5+0.1*(ii%2)) {
-          printf("SKIPFRAME %d (play at %f, now it is %f)!\n", ii, timesToPlayAt[ii], sSinceStart);
-          skipFrame=true;
-        }
-      }
-
-
-      // printf("--- JW Skip Frame %d ---\n", skipFrame);
-
-      if(!skipFrame) fullSystem->addActiveFrame(img, i);
-
-      delete img;
+      fullSystem->addActiveFrame(img, index);
 
       if(fullSystem->initFailed || setting_fullResetRequested) {
-        if(ii < 250 || setting_fullResetRequested) {
+        if(index < 250 || setting_fullResetRequested) {
           printf("RESETTING!\n");
 
           std::vector<IOWrap::Output3DWrapper*> wraps = fullSystem->outputWrapper;
@@ -391,10 +321,13 @@ int main( int argc, char** argv ) {
 
       if(fullSystem->isLost) {
           printf("LOST!!\n");
-          break;
+          return false;
       }
 
-    }
+      // Continue
+      return true;
+    });
+
     fullSystem->blockUntilMappingIsFinished();
     clock_t ended = clock();
     struct timeval tv_end;
@@ -403,10 +336,12 @@ int main( int argc, char** argv ) {
 
     fullSystem->printResult("result.txt");
 
-    int numFramesProcessed = abs(idsToPlay[0]-idsToPlay.back());
-    double numSecondsProcessed = fabs(reader->getTimestamp(idsToPlay[0])-reader->getTimestamp(idsToPlay.back()));
+    int numFramesProcessed = reader->numFramesProcessed();
+    double numSecondsProcessed = reader->numSecondsProcessed();
+
     double MilliSecondsTakenSingle = 1000.0f*(ended-started)/(float)(CLOCKS_PER_SEC);
     double MilliSecondsTakenMT = sInitializerOffset + ((tv_end.tv_sec-tv_start.tv_sec)*1000.0f + (tv_end.tv_usec-tv_start.tv_usec)/1000.0f);
+
     printf("\n======================"
         "\n%d Frames (%.1f fps)"
         "\n%.2fms per frame (single core); "
