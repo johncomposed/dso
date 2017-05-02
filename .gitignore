@@ -13,3 +13,4 @@ build-*
 *.so.*
 .idea
 cmake-build-debug
+tmp
