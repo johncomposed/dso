@@ -250,11 +250,8 @@ int main( int argc, char** argv ) {
 
   // hook crtl+C.
   boost::thread exThread = boost::thread(exitThread);
-  ImageFolderReader* reader;
-
-
-
-  reader = new ImageFolderReader(source,calib, gammaCalib, vignette);
+  
+  ImageFolderReader* reader = new ImageFolderReader(source,calib, gammaCalib, vignette);
   reader->setGlobalCalibration();
 
 
@@ -292,6 +289,44 @@ int main( int argc, char** argv ) {
         timesToPlayAt.push_back(timesToPlayAt.back() +  fabs(tsThis-tsPrev)/playbackSpeed);
       }
     }
+
+
+    // Future API
+
+    // reader.prepVideo();
+
+    // reader.readVideo([&](ImageAndExposure* img, int index) {
+    //   fullSystem->addActiveFrame(img, i);
+
+
+    //   if(fullSystem->initFailed || setting_fullResetRequested) {
+    //     if(index < 250 || setting_fullResetRequested) {
+    //       printf("RESETTING!\n");
+
+    //       std::vector<IOWrap::Output3DWrapper*> wraps = fullSystem->outputWrapper;
+    //       delete fullSystem;
+
+    //       for(IOWrap::Output3DWrapper* ow : wraps) ow->reset();
+
+    //       fullSystem = new FullSystem();
+    //       fullSystem->setGammaFunction(reader->getPhotometricGamma());
+    //       fullSystem->linearizeOperation = (playbackSpeed==0);
+
+
+    //       fullSystem->outputWrapper = wraps;
+
+    //       setting_fullResetRequested=false;
+    //     }
+    //   }
+
+    //   if(fullSystem->isLost) {
+    //       printf("LOST!!\n");
+    //       break;
+    //   }
+
+
+    // });
+
 
 
     struct timeval tv_start;
